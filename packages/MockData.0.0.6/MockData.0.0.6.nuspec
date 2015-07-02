@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>MockData</id>
+    <version>0.0.6</version>
+    <title>Mock Data Generator</title>
+    <authors>Antonio Ripa</authors>
+    <owners>Antonio Ripa</owners>
+    <projectUrl>https://gist.github.com/antoripa/8113885</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Random custom data generator for testing software.</description>
+    <tags>tdd nunit</tags>
+  </metadata>
+</package>

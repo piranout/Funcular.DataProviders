@@ -2,7 +2,7 @@
 // *********************************************************************************************************
 // Funcular.DataProviders>Funcular.DataProviders>IEntityProvider.cs
 // Created: 2015-07-01 3:53 PM
-// Updated: 2015-07-01 3:56 PM
+// Updated: 2015-07-02 5:51 PM
 // By: Paul Smith 
 // 
 // *********************************************************************************************************
@@ -74,21 +74,12 @@ namespace Funcular.DataProviders.EntityFramework
         void Save();
 
         /// <summary>
-        ///     Save the entity. This will create an entity if it doesnt
-        ///     exist, otherwise it will update it.
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entity"></param>
-        void Save<TEntity>(TEntity entity) where TEntity : class, new();
-
-        void Save<TEntity>(IEnumerable<TEntity> entities) where TEntity : class, new();
-
-        /// <summary>
         ///     Adds an entity to the context without saving.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
         /// <param name="entity"></param>
-        void Add<TEntity>(TEntity entity) where TEntity : class, new();
+        void Add<TEntity, TId>(TEntity entity) where TEntity : class, new();
 
         /// <summary>
         ///     Delete an entity.
@@ -110,5 +101,76 @@ namespace Funcular.DataProviders.EntityFramework
 
         void SetDetached<TEntity>(TEntity entity) where TEntity : class;
         void SetModified<TEntity>(TEntity entity) where TEntity : class;
+
+        /// <summary>
+        ///     Set the user Id to use when updating ICreateable and IModifyable entities
+        /// </summary>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="user"></param>
+        void SetCurrentUser<TId>(TId user);
+
+        /// <summary>
+        ///     Get the current user assigned to this context
+        /// </summary>
+        /// <typeparam name="TId"></typeparam>
+        /// <returns></returns>
+        TId GetCurrentUser<TId>();
+
+        /// <summary>
+        ///     Saves all modifications to the context
+        /// </summary>
+        void SaveAsync(bool async);
+
+        /// <summary>
+        ///     Add a new entity instance to the database and commit.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="entity"></param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
+        /// <returns></returns>
+        TEntity Insert<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new();
+
+        /// <summary>
+        ///     Update an entity instance in the database and commit.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="entity"></param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
+        /// <returns></returns>
+        TEntity Update<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new();
+
+        /// <summary>
+        ///     Add a new entity instance to the database and commit.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="entities"></param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
+        /// <returns></returns>
+        IEnumerable<TEntity> Insert<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new();
+
+        /// <summary>
+        ///     Update a collection of entity instances in the database, and commit once.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="entities"></param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
+        /// <returns></returns>
+        IEnumerable<TEntity> Update<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new();
     }
 }

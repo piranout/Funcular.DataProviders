@@ -1,0 +1,7 @@
+﻿CREATE TABLE [dbo].[MyLedgerEntry]
+(
+	[Id] CHAR(25) NOT NULL PRIMARY KEY, 
+    [DateCreatedUtc] DATETIME2 NOT NULL DEFAULT GETUTCDATE(), 
+	[ItemAmount] MONEY NOT NULL,
+    [ItemText] NVARCHAR(50) NOT NULL
+)

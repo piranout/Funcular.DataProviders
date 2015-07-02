@@ -1,6 +1,6 @@
 ﻿CREATE TABLE [dbo].[MyDescribed] (
     [Id]                    CHAR (25)       NOT NULL,
-    [DateCreatedUtc]        DATETIME2 (7)   NOT NULL,
+    [DateCreatedUtc]        DATETIME2 (7)   NOT NULL DEFAULT GETUTCDATE(),
     [CreatedBy]             NVARCHAR (100)  NOT NULL,
     [DateModifiedUtc]       DATETIME2 (7)   NULL,
     [ModifiedBy]            NVARCHAR (100)  NULL,
