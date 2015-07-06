@@ -1,10 +1,10 @@
 # Funcular.DataProviders
-Self-configuring, dependency-injection-friendly, code-first Entity Framework-based data provider. 
+Self-configuring, dependency-injection-friendly, code-first Entity Framework-based data provider. No EDMX here. Automatically scans assemblies in your AppDomain for configurable entities. Requires minimal configuration, and most importantly, does __not__ require you to manually add every entity type to your DbSet.
 
 Currently supports SQL Server; eventually will handle MongoDB and others as well.
 
 ### Usage 
-A minimalistic example could be this simple. It is assumed that you either follow Entity Framework naming conventions for entities, tables, PKs, etc., or else you have created EntityTypeConfiguration classes for your entities.
+A minimalistic example could be this simple. It is assumed that you either follow Entity Framework naming conventions for entities, tables, PKs, Ids, etc., or else you have created EntityTypeConfiguration classes for your entities. EntityTypeConfigurations for a type will always take precedence over the automatic mappings that EF would otherwise do.
 
 ```csharp
     // Usings:
