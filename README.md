@@ -6,7 +6,7 @@ Currently supports SQL Server; eventually will handle MongoDB and others as well
 ### Usage 
 A minimalistic example could be this simple. It is assumed that you either follow Entity Framework naming conventions for entities, tables, PKs, etc., or else you have created EntityTypeConfiguration classes for your entities.
 
-{code:csharp}
+```csharp
     // Usings:
     using Funcular.DataProviders.EntityFramework;
     // Your entity namespace:
@@ -37,12 +37,12 @@ A minimalistic example could be this simple. It is assumed that you either follo
         .FirstOrDefault(myDescribed => myDescribed.Id == id);
 
     // .Insert and .Update have overloads for working with single instances or collections.
-{code}
+```
 
 Optional: If you derive your entities from Funcular.Ontology interfaces and base classes, it makes it easier to apply common behavior to the entire domain.
 * You can apply a common Id-assignment method to all entities
-* The data provider will automatically handle audit fields like creation / modification users and dates. 
-{code:csharp}
+* The data provider will automatically handle audit fields like creation / modification dates and users. 
+```csharp
     // The example uses Base36 CHAR(20) Ids; you don't have to:
     var idGenerator = new Base36IdGenerator(
                 numTimestampCharacters: 11,
@@ -66,4 +66,4 @@ Optional: If you derive your entities from Funcular.Ontology interfaces and base
     var updated = this._provider.Update<DescribedThing, string>(inserted);
     Assert.IsNotNull(updated.DateModifiedUtc);
     Assert.IsNotNull(updated.ModifiedBy);
-{code}
+```
