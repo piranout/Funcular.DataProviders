@@ -2,7 +2,7 @@
 // *********************************************************************************************************
 // Funcular.DataProviders>Funcular.DataProviders>EntityFrameworkProvider.cs
 // Created: 2015-07-01 3:52 PM
-// Updated: 2015-07-02 2:40 PM
+// Updated: 2015-07-06 10:22 AM
 // By: Paul Smith 
 // 
 // *********************************************************************************************************
@@ -37,8 +37,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Entity;
-using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using Funcular.DataProviders.EntityFramework.SqlServer;
@@ -62,7 +60,7 @@ namespace Funcular.DataProviders.EntityFramework
         public BaseContext Context { get { return this._context; } }
 
         /// <summary>
-        /// Get a reference to the context’s underlying database.
+        ///     Get a reference to the context’s underlying database.
         /// </summary>
         /// <returns></returns>
         public Database GetDatabase()
@@ -90,7 +88,7 @@ namespace Funcular.DataProviders.EntityFramework
         #endregion
 
 
-        #region IProvider implementation
+        #region IEntityProvider implementation
         public Func<Type, bool> IsEntityType { get { return Context.IsEntityType; } set { this._context.IsEntityType = value; } }
 
         /// <summary>
@@ -110,7 +108,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// <returns></returns>
         public TId GetCurrentUser<TId>()
         {
-            return (TId)this._currentUser;
+            return (TId) this._currentUser;
         }
 
         /// <summary>
@@ -119,7 +117,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// <param name="entity"></param>
         public void Add<TEntity, TId>(TEntity entity) where TEntity : class, new()
         {
-            if (this.Context.Entry(entity).State != EntityState.Detached)
+            if (Context.Entry(entity).State != EntityState.Detached)
                 return;
             var createable = (entity as ICreateable<TId>);
             if (createable != null)
@@ -197,106 +195,93 @@ namespace Funcular.DataProviders.EntityFramework
         }
 
         /// <summary>
-        /// Add a new entity instance to the database and commit.
+        ///     Add a new entity instance to the database and commit.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TId"></typeparam>
         /// <param name="entity"></param>
-        /// <param name="safe">Return after entity is saved. If false, attempts to save async, in which case
-        /// it is possible to encounter silent exceptions.</param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
         /// <returns></returns>
         public TEntity Insert<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
         {
             var createable = (entity as ICreateable<TId>);
             if (createable != null)
-            {
-                SetCreateableProperties<TEntity, TId>(createable);
-            }
+                SetCreateableProperties(createable);
             GetDbSet<TEntity>().Add(entity);
-            if(safe)
-            {
+            if (safe)
                 Context.SaveChanges();
-            }
             else
-            {
                 Context.SaveChangesAsync();
-            }
             return entity;
         }
 
         /// <summary>
-        /// Update an entity instance in the database and commit.
+        ///     Update an entity instance in the database and commit.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TId"></typeparam>
         /// <param name="entity"></param>
-        /// <param name="safe">Return after entity is saved. If false, attempts to save async, in which case
-        /// it is possible to encounter silent exceptions.</param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
         /// <returns></returns>
         public TEntity Update<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
         {
             var dbEntityEntry = Context.Entry(entity);
             var modifyable = (entity as IModifyable<TId>);
             if (modifyable != null)
-            {
-                SetModifyableProperties<TEntity, TId>(modifyable);
-            }
-            if(dbEntityEntry.State == EntityState.Detached)
-            {
+                SetModifyableProperties(modifyable);
+            if (dbEntityEntry.State == EntityState.Detached)
                 GetDbSet<TEntity>().Attach(entity);
-            }
             if (safe)
-            {
                 Context.SaveChanges();
-            }
             else
-            {
                 Context.SaveChangesAsync();
-            }
             return entity;
         }
 
-
         /// <summary>
-        /// Add a new entity instance to the database and commit.
+        ///     Add a new entity instance to the database and commit.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TId"></typeparam>
         /// <param name="entities"></param>
-        /// <param name="safe">Return after entity is saved. If false, attempts to save async, in which case
-        /// it is possible to encounter silent exceptions.</param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
         /// <returns></returns>
         public IEnumerable<TEntity> Insert<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new()
         {
             var entityArray = entities.ToArray();
             foreach (var entity in entityArray)
-            {    
-               var createable = (entity as ICreateable<TId>);
+            {
+                var createable = (entity as ICreateable<TId>);
                 if (createable != null)
-                {
-                    SetCreateableProperties<TEntity, TId>(createable);
-                }
+                    SetCreateableProperties(createable);
                 GetDbSet<TEntity>().Add(entity);
             }
             if (safe)
-            {
                 Context.SaveChanges();
-            }
             else
-            {
                 Context.SaveChangesAsync();
-            }
             return entityArray;
         }
 
         /// <summary>
-        /// Update a collection of entity instances in the database, and commit once.
+        ///     Update a collection of entity instances in the database, and commit once.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TId"></typeparam>
         /// <param name="entities"></param>
-        /// <param name="safe">Return after entity is saved. If false, attempts to save async, in which case
-        /// it is possible to encounter silent exceptions.</param>
+        /// <param name="safe">
+        ///     Return after entity is saved. If false, attempts to save async, in which case
+        ///     it is possible to encounter silent exceptions.
+        /// </param>
         /// <returns></returns>
         public IEnumerable<TEntity> Update<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new()
         {
@@ -305,38 +290,16 @@ namespace Funcular.DataProviders.EntityFramework
             {
                 var modifyable = (entity as IModifyable<TId>);
                 if (modifyable != null)
-                {
-                    SetModifyableProperties<TEntity, TId>(modifyable);
-                }
+                    SetModifyableProperties(modifyable);
                 var dbEntityEntry = Context.Entry(entity);
                 if (dbEntityEntry.State == EntityState.Detached)
-                {
                     GetDbSet<TEntity>().Attach(entity);
-                }
             }
             if (safe)
-            {
                 Context.SaveChanges();
-            }
             else
-            {
                 Context.SaveChangesAsync();
-            }
             return entityArray;
-        }
-
-        private void SetModifyableProperties<TEntity, TId>(IModifyable<TId> modifyable) where TEntity : class, new()
-        {
-            modifyable.DateModifiedUtc = DateTime.UtcNow;
-            modifyable.ModifiedBy = GetCurrentUser<TId>();
-        }
-
-        private void SetCreateableProperties<TEntity, TId>(ICreateable<TId> createable) where TEntity : class, new()
-        {
-            if (createable.CreatedBy == null || createable.CreatedBy.Equals(default(TId)))
-                createable.CreatedBy = GetCurrentUser<TId>();
-            if (createable.DateCreatedUtc == default(DateTime))
-                createable.DateCreatedUtc = DateTime.UtcNow;
         }
 
         /// <summary>
@@ -351,7 +314,7 @@ namespace Funcular.DataProviders.EntityFramework
         }
 
         /// <summary>
-        /// Set the context’s entry for this instance to EntityState.Modified.
+        ///     Set the context’s entry for this instance to EntityState.Modified.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entity"></param>
@@ -361,44 +324,40 @@ namespace Funcular.DataProviders.EntityFramework
         }
 
         /// <summary>
-        /// Set the context’s entry for this instance to EntityState.Modified.
+        ///     Set the context’s entry for this instance to EntityState.Modified.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entity"></param>
         public void SetModified<TEntity>(TEntity entity) where TEntity : class
         {
             this._context.Entry(entity).State = EntityState.Modified;
-            if (entity is IModifyable<TEntity>)
-                (entity as IModifyable<TEntity>).DateModifiedUtc = DateTime.UtcNow;
         }
 
         /// <summary>
-        /// Set the context’s entry for this instance to EntityState.Modified.
+        ///     Set the context’s entry for this instance to EntityState.Modified.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entity"></param>
         public void SetAdded<TEntity>(TEntity entity) where TEntity : class
         {
             this._context.Entry(entity).State = EntityState.Added;
-            if (entity is ICreateable<TEntity>)
-                (entity as IModifyable<TEntity>).DateModifiedUtc = DateTime.UtcNow;
         }
-
-
         #endregion
 
 
-        #region IEntityProvider Members
-        /// <summary>
-        ///     Dispose of this class and cleanup the DbContext
-        /// </summary>
-        public void Dispose()
+        private void SetModifyableProperties<TId>(IModifyable<TId> modifyable)
         {
-            dispose(true);
-            GC.SuppressFinalize(this);
+            modifyable.DateModifiedUtc = DateTime.UtcNow;
+            modifyable.ModifiedBy = GetCurrentUser<TId>();
         }
-        #endregion
 
+        private void SetCreateableProperties<TId>(ICreateable<TId> createable)
+        {
+            if (createable.CreatedBy == null || createable.CreatedBy.Equals(default(TId)))
+                createable.CreatedBy = GetCurrentUser<TId>();
+            if (createable.DateCreatedUtc == default(DateTime))
+                createable.DateCreatedUtc = DateTime.UtcNow;
+        }
 
         private void dispose(bool disposing)
         {
@@ -428,7 +387,19 @@ namespace Funcular.DataProviders.EntityFramework
         /// <returns></returns>
         public DbSet<TEntity> GetDbSet<TEntity>() where TEntity : class, new()
         {
-            return (DbSet<TEntity>)this._dbSets.GetOrAdd(typeof(TEntity), x => Context.Set<TEntity>());
+            return (DbSet<TEntity>) this._dbSets.GetOrAdd(typeof (TEntity), x => Context.Set<TEntity>());
         }
+
+
+        #region IDisposable implementation
+        /// <summary>
+        ///     Dispose of this class and cleanup the DbContext
+        /// </summary>
+        public void Dispose()
+        {
+            dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

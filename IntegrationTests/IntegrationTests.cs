@@ -35,6 +35,7 @@
 #region Usings
 using System;
 using System.Configuration;
+using System.Linq;
 using Funcular.DataProviders.EntityFramework;
 using Funcular.DataProviders.IntegrationTests.Entities;
 using Funcular.ExtensionMethods;
@@ -132,9 +133,45 @@ namespace Funcular.DataProviders.IntegrationTests
             var id = described.Id;
             this._provider.Insert<MyDescribed, string>(described);
             var retrieved = this._provider.Get<MyDescribed, string>(id);
-            retrieved.MyBoolProperty = !retrieved.MyBoolProperty;
+            var myBoolProperty = !retrieved.MyBoolProperty;
+            retrieved.MyBoolProperty = myBoolProperty;
             var updated = this._provider.Update<MyDescribed, string>(retrieved);
             Assert.IsNotNull(updated.ModifiedBy);
+        }
+
+        [TestMethod]
+        public void Modified_Entity_Change_Is_Persisted()
+        {
+            var described = GetEntityInstance();
+            var id = described.Id;
+            this._provider.Insert<MyDescribed, string>(described);
+            var retrieved = this._provider.Get<MyDescribed, string>(id);
+            var newDescription = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay);
+            retrieved.Description = newDescription;
+            this._provider.Update<MyDescribed, string>(retrieved);
+            retrieved = this._provider.Query<MyDescribed>()
+                .FirstOrDefault(myDescribed => myDescribed.Id == id);
+            if (retrieved != null)
+                Assert.AreEqual((object) retrieved.Description, newDescription);
+            else
+            {
+                Assert.Fail("Description was not updated");
+            }
+        }
+
+        [TestMethod]
+        public void Deleted_Entity_Is_Gone()
+        {
+            var described = GetEntityInstance();
+            var id = described.Id;
+            this._provider.Insert<MyDescribed, string>(described);
+            var retrieved = this._provider.Query<MyDescribed>()
+                .FirstOrDefault(myDescribed => myDescribed.Id == id);
+            Assert.IsNotNull(retrieved);
+            this._provider.Delete<MyDescribed, string>(id);
+            retrieved = this._provider.Query<MyDescribed>()
+                .FirstOrDefault(myDescribed => myDescribed.Id == id);
+            Assert.IsNull(retrieved);
         }
 
         private MyDescribed GetEntityInstance()

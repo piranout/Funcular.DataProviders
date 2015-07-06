@@ -2,7 +2,7 @@
 // *********************************************************************************************************
 // Funcular.DataProviders>Funcular.DataProviders>IEntityProvider.cs
 // Created: 2015-07-01 3:53 PM
-// Updated: 2015-07-02 5:51 PM
+// Updated: 2015-07-06 10:24 AM
 // By: Paul Smith 
 // 
 // *********************************************************************************************************
@@ -44,6 +44,11 @@ namespace Funcular.DataProviders.EntityFramework
 {
     public interface IEntityProvider
     {
+        /// <summary>
+        /// Provide a predicate to tell whether a type is one of your entities.
+        /// Typically, this will refer to being derived from a common base class,
+        /// or to it using your entity namespace.
+        /// </summary>
         Func<Type, bool> IsEntityType { get; set; }
 
         /// <summary>
@@ -172,5 +177,12 @@ namespace Funcular.DataProviders.EntityFramework
         /// </param>
         /// <returns></returns>
         IEnumerable<TEntity> Update<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new();
+
+        /// <summary>
+        ///     Set the context’s entry for this instance to EntityState.Modified.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entity"></param>
+        void SetAdded<TEntity>(TEntity entity) where TEntity : class;
     }
 }
