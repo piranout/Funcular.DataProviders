@@ -4,6 +4,8 @@ Self-configuring, dependency-injection-friendly, code-first Entity Framework-bas
 Currently supports SQL Server; eventually will handle MongoDB and others as well.
 
 ### Usage 
+You can find a complete, working usage example in the IntegrationTests project. It uses the PrototypeDatabase (included); by default, it expects it to be on the default SQL Server instance on your local machine, using Windows authentication.
+
 A minimalistic example could be this simple. It is assumed that you either follow Entity Framework naming conventions for entities, tables, PKs, Ids, etc., or else you have created EntityTypeConfiguration classes for your entities. EntityTypeConfigurations for a type will always take precedence over the automatic mappings that EF would otherwise do.
 
 ```csharp
