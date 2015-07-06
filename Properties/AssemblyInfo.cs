@@ -2,7 +2,7 @@
 // *********************************************************************************************************
 // Funcular.DataProviders>Funcular.DataProviders>AssemblyInfo.cs
 // Created: 2015-07-01 3:12 PM
-// Updated: 2015-07-01 3:56 PM
+// Updated: 2015-07-06 1:01 PM
 // By: Paul Smith 
 // 
 // *********************************************************************************************************
@@ -72,5 +72,5 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("0.0.0.7")]
-[assembly: AssemblyFileVersion("0.0.0.7")]
+[assembly: AssemblyVersion("0.0.8")]
+[assembly: AssemblyFileVersion("0.0.8")]
