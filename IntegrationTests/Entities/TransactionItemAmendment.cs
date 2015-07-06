@@ -4,9 +4,9 @@ using Funcular.Ontology.Archetypes;
 
 namespace Funcular.DataProviders.IntegrationTests.Entities 
 {
-	public partial class MyLedgerEntryModification : Createable<string>
+	public partial class TransactionItemAmendment : Createable<string>
 	{
-		public String LedgerEntryId { get; set; }
+		public String TransactionItemId { get; set; }
 		public Decimal ItemAmount { get; set; }
 		public String Reason { get; set; }
 	}

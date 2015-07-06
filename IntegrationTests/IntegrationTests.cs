@@ -54,6 +54,18 @@ namespace Funcular.DataProviders.IntegrationTests
         private readonly Random _rnd = new Random();
         private Base36IdGenerator _base36;
         private EntityFrameworkProvider _provider;
+        private readonly object _lockObj = new object();
+
+        public Random Rnd
+        {
+            get
+            {
+                lock (_lockObj)
+                {
+                    return this._rnd;
+                }
+            }
+        }
 
         [TestInitialize]
         public void Setup()
@@ -65,11 +77,11 @@ namespace Funcular.DataProviders.IntegrationTests
                 numRandomCharacters: 5,
                 reservedValue: "",
                 delimiter: "-",
-                delimiterPositions: new[] {15, 10, 5});
+                delimiterPositions: new[] { 15, 10, 5 });
             var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
             this._provider = new EntityFrameworkProvider(connectionString)
             {
-                IsEntityType = type => type.IsSubclassOf(typeof (Createable<>))
+                IsEntityType = type => type.IsSubclassOf(typeof(Createable<>))
             };
             this._provider.SetCurrentUser("Funcular\\Paul");
             Createable<string>.IdentityFunction = () => this._base36.NewId();
@@ -93,7 +105,7 @@ namespace Funcular.DataProviders.IntegrationTests
         public void Created_Entity_Is_Assigned_CreatedBy()
         {
             var described = GetEntityInstance();
-            var inserted = this._provider.Insert<MyDescribed, string>(described);
+            var inserted = this._provider.Insert<DescribedThing, string>(described);
             Assert.IsTrue(inserted.CreatedBy.HasValue());
         }
 
@@ -104,8 +116,8 @@ namespace Funcular.DataProviders.IntegrationTests
             var id = described.Id;
             try
             {
-                var inserted = this._provider.Insert<MyDescribed, string>(described);
-                var fetched = this._provider.Get<MyDescribed, string>(id);
+                var inserted = this._provider.Insert<DescribedThing, string>(described);
+                var fetched = this._provider.Get<DescribedThing, string>(id);
                 Assert.IsNotNull(fetched);
             }
             catch (Exception e)
@@ -119,10 +131,10 @@ namespace Funcular.DataProviders.IntegrationTests
         {
             var described = GetEntityInstance();
             var id = described.Id;
-            this._provider.Insert<MyDescribed, string>(described);
-            var retrieved = this._provider.Get<MyDescribed, string>(id);
-            retrieved.MyBoolProperty = !retrieved.MyBoolProperty;
-            var updated = this._provider.Update<MyDescribed, string>(retrieved);
+            this._provider.Insert<DescribedThing, string>(described);
+            var retrieved = this._provider.Get<DescribedThing, string>(id);
+            retrieved.BoolProperty = !retrieved.BoolProperty;
+            var updated = this._provider.Update<DescribedThing, string>(retrieved);
             Assert.IsNotNull(updated.DateModifiedUtc);
         }
 
@@ -131,11 +143,11 @@ namespace Funcular.DataProviders.IntegrationTests
         {
             var described = GetEntityInstance();
             var id = described.Id;
-            this._provider.Insert<MyDescribed, string>(described);
-            var retrieved = this._provider.Get<MyDescribed, string>(id);
-            var myBoolProperty = !retrieved.MyBoolProperty;
-            retrieved.MyBoolProperty = myBoolProperty;
-            var updated = this._provider.Update<MyDescribed, string>(retrieved);
+            this._provider.Insert<DescribedThing, string>(described);
+            var retrieved = this._provider.Get<DescribedThing, string>(id);
+            var myBoolProperty = !retrieved.BoolProperty;
+            retrieved.BoolProperty = myBoolProperty;
+            var updated = this._provider.Update<DescribedThing, string>(retrieved);
             Assert.IsNotNull(updated.ModifiedBy);
         }
 
@@ -144,15 +156,15 @@ namespace Funcular.DataProviders.IntegrationTests
         {
             var described = GetEntityInstance();
             var id = described.Id;
-            this._provider.Insert<MyDescribed, string>(described);
-            var retrieved = this._provider.Get<MyDescribed, string>(id);
+            this._provider.Insert<DescribedThing, string>(described);
+            var retrieved = this._provider.Get<DescribedThing, string>(id);
             var newDescription = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay);
             retrieved.Description = newDescription;
-            this._provider.Update<MyDescribed, string>(retrieved);
-            retrieved = this._provider.Query<MyDescribed>()
+            this._provider.Update<DescribedThing, string>(retrieved);
+            retrieved = this._provider.Query<DescribedThing>()
                 .FirstOrDefault(myDescribed => myDescribed.Id == id);
             if (retrieved != null)
-                Assert.AreEqual((object) retrieved.Description, newDescription);
+                Assert.AreEqual((object)retrieved.Description, newDescription);
             else
             {
                 Assert.Fail("Description was not updated");
@@ -164,25 +176,25 @@ namespace Funcular.DataProviders.IntegrationTests
         {
             var described = GetEntityInstance();
             var id = described.Id;
-            this._provider.Insert<MyDescribed, string>(described);
-            var retrieved = this._provider.Query<MyDescribed>()
+            this._provider.Insert<DescribedThing, string>(described);
+            var retrieved = this._provider.Query<DescribedThing>()
                 .FirstOrDefault(myDescribed => myDescribed.Id == id);
             Assert.IsNotNull(retrieved);
-            this._provider.Delete<MyDescribed, string>(id);
-            retrieved = this._provider.Query<MyDescribed>()
+            this._provider.Delete<DescribedThing, string>(id);
+            retrieved = this._provider.Query<DescribedThing>()
                 .FirstOrDefault(myDescribed => myDescribed.Id == id);
             Assert.IsNull(retrieved);
         }
 
-        private MyDescribed GetEntityInstance()
+        private DescribedThing GetEntityInstance()
         {
-            var described = new MyDescribed
+            var described = new DescribedThing
             {
                 Description = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay),
                 Label = Internet.DomainWord() + " " + DateTime.Now.Ticks,
-                MyNullableIntProperty = this._rnd.Next(10) < 6 ? null : (int?) this._rnd.Next(1000000),
-                MyBoolProperty = this._rnd.Next(2) == 1,
-                MyTextProperty = Lorem.Sentence(),
+                NullableIntProperty = this.Rnd.Next(10) < 6 ? null : (int?)this.Rnd.Next(1000000),
+                BoolProperty = this.Rnd.Next(2) == 1,
+                TextProperty = Lorem.Sentence(),
                 Name = Person.FirstName()
             };
             return described;

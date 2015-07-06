@@ -62,16 +62,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Entities\Mappings\MyDescribedMapping.cs" />
-    <Compile Include="Entities\Mappings\MyDescribedMapping.partial.cs" />
-    <Compile Include="Entities\Mappings\MyLedgerEntryMapping.cs" />
-    <Compile Include="Entities\Mappings\MyLedgerEntryMapping.partial.cs" />
-    <Compile Include="Entities\Mappings\MyLedgerEntryModificationMapping.cs" />
-    <Compile Include="Entities\Mappings\MyLedgerEntryModificationMapping.partial.cs" />
-    <Compile Include="Entities\MyDescribed.cs" />
-    <Compile Include="Entities\MyLedgerEntry.cs" />
-    <Compile Include="Entities\MyLedgerEntry.partial.cs" />
-    <Compile Include="Entities\MyLedgerEntryModification.cs" />
+    <Compile Include="Entities\Mappings\DescribedThingMapping.cs" />
+    <Compile Include="Entities\Mappings\DescribedThingMapping.partial.cs" />
+    <Compile Include="Entities\Mappings\TransactionItemMapping.cs" />
+    <Compile Include="Entities\Mappings\TransactionItemMapping.partial.cs" />
+    <Compile Include="Entities\Mappings\TransactionItemAmendmentMapping.cs" />
+    <Compile Include="Entities\Mappings\TransactionItemAmendmentMapping.partial.cs" />
+    <Compile Include="Entities\DescribedThing.cs" />
+    <Compile Include="Entities\TransactionItem.cs" />
+    <Compile Include="Entities\TransactionItem.partial.cs" />
+    <Compile Include="Entities\TransactionItemAmendment.cs" />
     <Compile Include="IntegrationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -4,7 +4,7 @@ using Funcular.Ontology.Archetypes;
 
 namespace Funcular.DataProviders.IntegrationTests.Entities 
 {
-	public partial class MyLedgerEntry : Createable<string>
+	public partial class TransactionItem : Createable<string>
 	{
 		public Decimal ItemAmount { get; set; }
 		public String ItemText { get; set; }

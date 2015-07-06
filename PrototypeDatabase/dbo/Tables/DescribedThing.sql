@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[MyDescribed] (
+﻿CREATE TABLE [dbo].[DescribedThing] (
     [Id]                    CHAR (25)       NOT NULL,
     [DateCreatedUtc]        DATETIME2 (7)   NOT NULL DEFAULT GETUTCDATE(),
     [CreatedBy]             NVARCHAR (100)  NOT NULL,
@@ -7,9 +7,9 @@
     [Name]                  NVARCHAR (100)  NOT NULL,
     [Label]                 NVARCHAR (255)  NULL,
     [Description]           NVARCHAR (2048) NULL,
-    [MyNullableIntProperty] INT             NULL,
-    [MyBoolProperty]        BIT             NOT NULL,
-    [MyTextProperty]        NVARCHAR (MAX)  NULL,
-    CONSTRAINT [PK_MyDescribed] PRIMARY KEY CLUSTERED ([Id] ASC)
+    [NullableIntProperty] INT             NULL,
+    [BoolProperty]        BIT             NOT NULL,
+    [TextProperty]        NVARCHAR (MAX)  NULL,
+    CONSTRAINT [PK_DescribedThing] PRIMARY KEY CLUSTERED ([Id] ASC)
 );
 

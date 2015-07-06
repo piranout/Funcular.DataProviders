@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[MyLedgerEntry]
+﻿CREATE TABLE [dbo].[TransactionItem]
 (
 	[Id] CHAR(25) NOT NULL PRIMARY KEY, 
     [DateCreatedUtc] DATETIME2 NOT NULL DEFAULT GETUTCDATE(), 

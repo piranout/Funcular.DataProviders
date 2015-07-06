@@ -61,9 +61,9 @@
     <Folder Include="dbo\Tables\" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="dbo\Tables\MyDescribed.sql" />
-    <Build Include="dbo\Tables\MyLedgerEntry.sql" />
-    <Build Include="dbo\Tables\MyLedgerEntryModification.sql" />
+    <Build Include="dbo\Tables\DescribedThing.sql" />
+    <Build Include="dbo\Tables\TransactionItem.sql" />
+    <Build Include="dbo\Tables\TransactionItemAmendment.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="PrototypeDatabase.refactorlog" />
