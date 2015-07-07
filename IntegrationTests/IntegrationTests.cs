@@ -1,8 +1,9 @@
 ﻿#region File info
 // *********************************************************************************************************
+// TODO: IdGenerator Format (use configured delimiter value & positions w/sb.insert)
 // Funcular.DataProviders>IntegrationTests>IntegrationTests.cs
 // Created: 2015-07-02 3:52 PM
-// Updated: 2015-07-02 5:49 PM
+// Updated: 2015-07-07 3:48 PM
 // By: Paul Smith 
 // 
 // *********************************************************************************************************
@@ -35,6 +36,7 @@
 #region Usings
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using Funcular.DataProviders.EntityFramework;
 using Funcular.DataProviders.IntegrationTests.Entities;
@@ -51,16 +53,16 @@ namespace Funcular.DataProviders.IntegrationTests
     [TestClass]
     public class IntegrationTests
     {
+        private readonly object _lockObj = new object();
         private readonly Random _rnd = new Random();
         private Base36IdGenerator _base36;
         private EntityFrameworkProvider _provider;
-        private readonly object _lockObj = new object();
 
         public Random Rnd
         {
             get
             {
-                lock (_lockObj)
+                lock (this._lockObj)
                 {
                     return this._rnd;
                 }
@@ -77,34 +79,35 @@ namespace Funcular.DataProviders.IntegrationTests
                 numRandomCharacters: 5,
                 reservedValue: "",
                 delimiter: "-",
-                delimiterPositions: new[] { 15, 10, 5 });
+                delimiterPositions: new[] {15, 10, 5});
             var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
             this._provider = new EntityFrameworkProvider(connectionString)
             {
-                IsEntityType = type => type.IsSubclassOf(typeof(Createable<>))
+                IsEntityType = type => type.IsSubclassOf(typeof (Createable<>))
             };
             this._provider.SetCurrentUser("Funcular\\Paul");
+            this._provider.GetDatabase().Log = s => Debug.WriteLine(s);
             Createable<string>.IdentityFunction = () => this._base36.NewId();
         }
 
         [TestMethod]
         public void Created_Entity_Is_Assigned_Id()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             Assert.IsTrue(described.Id.HasValue() && described.Id.Length == 20);
         }
 
         [TestMethod]
         public void Created_Entity_Is_Assigned_DateCreatedUtc()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             Assert.IsTrue(described.DateCreatedUtc != default(DateTime));
         }
 
         [TestMethod]
         public void Created_Entity_Is_Assigned_CreatedBy()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var inserted = this._provider.Insert<DescribedThing, string>(described);
             Assert.IsTrue(inserted.CreatedBy.HasValue());
         }
@@ -112,7 +115,7 @@ namespace Funcular.DataProviders.IntegrationTests
         [TestMethod]
         public void Created_Entity_Is_Persisted()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var id = described.Id;
             try
             {
@@ -129,7 +132,7 @@ namespace Funcular.DataProviders.IntegrationTests
         [TestMethod]
         public void Modified_Entity_Is_Assigned_ModifiedDateUtc()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var id = described.Id;
             this._provider.Insert<DescribedThing, string>(described);
             var retrieved = this._provider.Get<DescribedThing, string>(id);
@@ -141,7 +144,7 @@ namespace Funcular.DataProviders.IntegrationTests
         [TestMethod]
         public void Modified_Entity_Is_Assigned_ModifiedBy()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var id = described.Id;
             this._provider.Insert<DescribedThing, string>(described);
             var retrieved = this._provider.Get<DescribedThing, string>(id);
@@ -154,7 +157,7 @@ namespace Funcular.DataProviders.IntegrationTests
         [TestMethod]
         public void Modified_Entity_Change_Is_Persisted()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var id = described.Id;
             this._provider.Insert<DescribedThing, string>(described);
             var retrieved = this._provider.Get<DescribedThing, string>(id);
@@ -164,17 +167,15 @@ namespace Funcular.DataProviders.IntegrationTests
             retrieved = this._provider.Query<DescribedThing>()
                 .FirstOrDefault(myDescribed => myDescribed.Id == id);
             if (retrieved != null)
-                Assert.AreEqual((object)retrieved.Description, newDescription);
+                Assert.AreEqual((object) retrieved.Description, newDescription);
             else
-            {
                 Assert.Fail("Description was not updated");
-            }
         }
 
         [TestMethod]
         public void Deleted_Entity_Is_Gone()
         {
-            var described = GetEntityInstance();
+            var described = CreateDescribedThing();
             var id = described.Id;
             this._provider.Insert<DescribedThing, string>(described);
             var retrieved = this._provider.Query<DescribedThing>()
@@ -186,18 +187,87 @@ namespace Funcular.DataProviders.IntegrationTests
             Assert.IsNull(retrieved);
         }
 
-        private DescribedThing GetEntityInstance()
+        [TestMethod]
+        public void Related_Entities_Are_Saved()
+        {
+            var transaction = CreateTransactionItem();
+            var id = transaction.Id;
+            this._provider.Insert<TransactionItem, string>(transaction);
+            var retrieved = this._provider.Query<TransactionItem>(item => item.Modifications)
+                .OrderByDescending(item => item.Id)
+                .FirstOrDefault(item =>
+                    item.Modifications.Any(amendment => amendment.TransactionItemId == id));
+            if (retrieved != null)
+                Assert.AreEqual(retrieved.Modifications.Count, 3);
+        }
+
+        [TestMethod]
+        public void Related_Entities_Are_Deleted()
+        {
+            var transaction = CreateTransactionItem();
+            var id = transaction.Id;
+            this._provider.Insert<TransactionItem, string>(transaction);
+            var retrieved = this._provider.Query<TransactionItem>(item => item.Modifications)
+                .OrderByDescending(item => item.Id)
+                .FirstOrDefault(item =>
+                    item.Modifications.Any(amendment => amendment.TransactionItemId == id));
+            if (retrieved != null)
+            {
+                var transactionItemAmendments = retrieved.Modifications.Skip(2).ToArray();
+                foreach (var modification in transactionItemAmendments)
+                {
+                    // Note: You cannot simply remove the modification or set it to null;
+                    // explicitly delete it instead:
+                    this._provider.Delete<TransactionItemAmendment, string>(modification);
+                }
+            }
+            // refresh 'retrieved' instance;
+            retrieved = this._provider.Query<TransactionItem>(item => item.Modifications)
+                .OrderByDescending(item => item.Id)
+                .FirstOrDefault(item =>
+                    item.Modifications.Any(amendment => amendment.TransactionItemId == id));
+            if (retrieved != null)
+                Assert.AreEqual(retrieved.Modifications.Count, 2);
+        }
+
+        private DescribedThing CreateDescribedThing()
         {
             var described = new DescribedThing
             {
                 Description = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay),
                 Label = Internet.DomainWord() + " " + DateTime.Now.Ticks,
-                NullableIntProperty = this.Rnd.Next(10) < 6 ? null : (int?)this.Rnd.Next(1000000),
-                BoolProperty = this.Rnd.Next(2) == 1,
+                NullableIntProperty = Rnd.Next(10) < 6 ? null : (int?) Rnd.Next(1000000),
+                BoolProperty = Rnd.Next(2) == 1,
                 TextProperty = Lorem.Sentence(),
                 Name = Person.FirstName()
             };
             return described;
+        }
+
+        /// <summary>
+        ///     Create a TransactionItem with 3 child amendments.
+        /// </summary>
+        /// <returns></returns>
+        private TransactionItem CreateTransactionItem()
+        {
+            var transaction = new TransactionItem
+            {
+                ItemAmount = this.Rnd.Next(1000)*0.1m,
+                ItemText = Internet.UserName()
+            };
+            var reasons = new[] {"VOID", "RETURN", "DISCOUNT"};
+            for (var i = 0; i < 3; i++)
+            {
+                var reason = reasons[i];
+                var amendment = new TransactionItemAmendment
+                {
+                    TransactionItemId = transaction.Id,
+                    ItemAmount = transaction.ItemAmount*(reason == "DISCOUNT" ? -0.25m : -1.0m),
+                    Reason = reason
+                };
+                transaction.Modifications.Add(amendment);
+            }
+            return transaction;
         }
     }
 }

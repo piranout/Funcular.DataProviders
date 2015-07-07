@@ -90,8 +90,9 @@ namespace Funcular.DataProviders.EntityFramework
         ///     Delete an entity.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
         /// <param name="entity"></param>
-        void Delete<TEntity>(TEntity entity) where TEntity : class, new();
+        void Delete<TEntity, TId>(TEntity entity) where TEntity : class, new();
 
         /// <summary>
         ///     Delete an entity by id.
@@ -120,11 +121,6 @@ namespace Funcular.DataProviders.EntityFramework
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
         TId GetCurrentUser<TId>();
-
-        /// <summary>
-        ///     Saves all modifications to the context
-        /// </summary>
-        void SaveAsync(bool async);
 
         /// <summary>
         ///     Add a new entity instance to the database and commit.
