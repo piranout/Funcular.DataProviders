@@ -173,6 +173,35 @@ namespace Funcular.DataProviders.IntegrationTests
         }
 
         [TestMethod]
+        public void Queryable_Is_Case_Insensitive()
+        {
+            var described = CreateDescribedThing();
+            var originalDescription = described.Description;
+            this._provider.Insert<DescribedThing, string>(described);
+            
+            var describedUppercase = CreateDescribedThing();
+            describedUppercase.Description = originalDescription.ToUpper();
+            this._provider.Insert<DescribedThing, string>(describedUppercase);
+
+            var retrievedCount = this._provider.Query<DescribedThing>()
+                .Count(d => d.Description == originalDescription);
+            var uppercaseCount = this._provider.Query<DescribedThing>()
+                .Count(d => d.Description == originalDescription.ToUpper());
+            
+            // SQL server comparison
+            Assert.IsTrue(retrievedCount == uppercaseCount);
+
+            // .NET framework comparison using CaseInsensitiveQueryable:
+            uppercaseCount = this._provider.Query<DescribedThing>()
+                .Where(d => d.Description == originalDescription.ToUpper())
+                .ToList()
+                .AsQueryable()
+                .AsCaseInsensitive()
+                .Count();
+            Assert.IsTrue(retrievedCount == uppercaseCount);
+        }
+
+        [TestMethod]
         public void Deleted_Entity_Is_Gone()
         {
             var described = CreateDescribedThing();
