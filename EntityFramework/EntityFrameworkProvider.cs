@@ -333,14 +333,13 @@ namespace Funcular.DataProviders.EntityFramework
         {
             this._context.Entry(entity).State = EntityState.Added;
         }
-        #endregion
 
         /// <summary>
         /// Runs business logic on Ontology-derived entities and saves changes.
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
-        protected int SaveChanges<TId>()
+        public int SaveChanges<TId>()
         {
             SetCreatableModifyableProperties<TId>();
             try
@@ -359,13 +358,25 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
-        private void SaveChangesAsync<TId>()
+        public void SaveChangesAsync<TId>()
         {
             SetCreatableModifyableProperties<TId>();
             this.Context.SaveChangesAsync().Start();
         }
 
-        protected void SetCreatableModifyableProperties<TId>()
+        /// <summary>
+        ///     Get the DbSet for a specific entity type
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        public DbSet<TEntity> GetDbSet<TEntity>() where TEntity : class, new()
+        {
+            return (DbSet<TEntity>)this._dbSets.GetOrAdd(typeof(TEntity), x => Context.Set<TEntity>());
+        }
+
+        #endregion
+
+        protected virtual void SetCreatableModifyableProperties<TId>()
         {
             var context = this.Context;
             Func<DbEntityEntry, bool> predicate = entry => entry.State == EntityState.Added || entry.State == EntityState.Modified;
@@ -390,30 +401,19 @@ namespace Funcular.DataProviders.EntityFramework
             // context.SaveChanges();
         }
 
-        protected void SetModifyableProperties<TId>(IModifyable<TId> modifyable)
+        protected virtual void SetModifyableProperties<TId>(IModifyable<TId> modifyable)
         {
             modifyable.DateModifiedUtc = DateTime.UtcNow;
             modifyable.ModifiedBy = GetCurrentUser<TId>();
         }
 
-        protected void SetCreateableProperties<TId>(ICreateable<TId> createable)
+        protected virtual void SetCreateableProperties<TId>(ICreateable<TId> createable)
         {
             if (createable.CreatedBy == null || createable.CreatedBy.Equals(default(TId)))
                 createable.CreatedBy = GetCurrentUser<TId>();
             if (createable.DateCreatedUtc == default(DateTime))
                 createable.DateCreatedUtc = DateTime.UtcNow;
         }
-
-        /// <summary>
-        ///     Get the DbSet for a specific entity type
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <returns></returns>
-        public DbSet<TEntity> GetDbSet<TEntity>() where TEntity : class, new()
-        {
-            return (DbSet<TEntity>)this._dbSets.GetOrAdd(typeof(TEntity), x => Context.Set<TEntity>());
-        }
-
 
         #region IDisposable implementation
         private void dispose(bool disposing)

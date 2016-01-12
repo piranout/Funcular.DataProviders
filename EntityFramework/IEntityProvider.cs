@@ -180,5 +180,19 @@ namespace Funcular.DataProviders.EntityFramework
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entity"></param>
         void SetAdded<TEntity>(TEntity entity) where TEntity : class;
+
+        /// <summary>
+        /// Runs business logic on Ontology-derived entities and saves changes.
+        /// </summary>
+        /// <typeparam name="TId"></typeparam>
+        /// <returns></returns>
+        int SaveChanges<TId>();
+
+        /// <summary>
+        /// Runs business logic on Ontology-derived entities and saves changes.
+        /// </summary>
+        /// <typeparam name="TId"></typeparam>
+        /// <returns></returns>
+        void SaveChangesAsync<TId>();
     }
 }

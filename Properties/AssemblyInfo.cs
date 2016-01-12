@@ -43,11 +43,11 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 
 [assembly: AssemblyTitle("Funcular.DataProviders")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Entity Framework Provider Layer")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Funcular Labs")]
 [assembly: AssemblyProduct("Funcular.DataProviders")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyCopyright("Copyright ©  2015-2016, Funcular Labs and Paul C Smith")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -72,5 +72,5 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("0.5.0.0")]
-[assembly: AssemblyFileVersion("0.5.0.0")]
+[assembly: AssemblyVersion("0.5.5.1")]
+[assembly: AssemblyFileVersion("0.5.5.1")]
