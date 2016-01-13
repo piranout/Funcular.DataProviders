@@ -40,6 +40,7 @@ using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Funcular.DataProviders.EntityFramework.SqlServer;
 using Funcular.Ontology.Archetypes;
 #endregion
@@ -361,7 +362,7 @@ namespace Funcular.DataProviders.EntityFramework
         public void SaveChangesAsync<TId>()
         {
             SetCreatableModifyableProperties<TId>();
-            this.Context.SaveChangesAsync().Start();
+            Context.SaveChangesAsync().Start();
         }
 
         /// <summary>
