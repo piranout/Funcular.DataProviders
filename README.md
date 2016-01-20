@@ -1,5 +1,13 @@
 # Funcular.DataProviders
-Self-configuring, dependency-injection-friendly, code-first Entity Framework-based data provider. No EDMX here. Automatically scans assemblies in your AppDomain for configurable entities. Requires minimal configuration, and most importantly, does __not__ require you to manually add every entity type to your DbSet.
+Self-configuring, dependency-injection-friendly, code-first Entity Framework-based data provider (repository utility). 
+
+*Provides easy __bulk__ insert, delete and update methods; update does not need a round-trip.
+*Automatically scans assemblies in your AppDomain for configurable entities 
+*No EDMXs 
+*Sets up a SQL Server context with no configuration but a connection string
+*Does __not__ require you to manually add entity types to your DbSet
+*By default, picks up any classes derived from EntityTypeConfiguration 
+*One line of code—a predicate—specifies which Types from your assembly are entities
 
 Currently supports SQL Server; eventually will handle MongoDB and others as well. A **[NuGet Package](https://www.nuget.org/packages/Funcular.DataProviders)** is also available.
 

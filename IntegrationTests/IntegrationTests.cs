@@ -35,6 +35,7 @@
 
 #region Usings
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
@@ -214,6 +215,60 @@ namespace Funcular.DataProviders.IntegrationTests
             retrieved = this._provider.Query<DescribedThing>()
                 .FirstOrDefault(myDescribed => myDescribed.Id == id);
             Assert.IsNull(retrieved);
+        }
+
+
+        [TestMethod]
+        public void Bulk_Inserted_Entities_Are_Present()
+        {
+            var things = new List<DescribedThing>();
+            var randomValue = Guid.NewGuid().ToString();
+            for (int i = 0; i < 10; i++)
+            {
+                var described = CreateDescribedThing();
+                things.Add(described);
+                described.Label = randomValue;
+            }
+            this._provider.BulkInsert<DescribedThing, string>(things);
+            var retrieved = this._provider.Query<DescribedThing>()
+                .Where(myDescribed => myDescribed.Label == randomValue);
+            Assert.AreEqual(retrieved.Count(), 10);
+        }
+
+        [TestMethod]
+        public void Bulk_Updated_Entities_Are_Changed()
+        {
+            this._provider.BulkUpdate<DescribedThing,string>(
+                x => x.Description.StartsWith("h"),
+                x => x.Label,
+                x => "");
+            var things = this._provider.Query<DescribedThing>()
+                .Where(x => x.Description.StartsWith("h"));
+            Assert.IsTrue(things.All(x => x.Label == ""));
+        }
+
+        [TestMethod]
+        public void Bulk_Deleted_Entities_Are_Gone()
+        {
+            var describeds = new List<DescribedThing>();
+            for (int i = 0; i < 20; i++)
+            {
+                describeds.Add(CreateDescribedThing());
+            }
+            var list = _provider.Query<DescribedThing>()
+                .OrderBy(x => x.Id)
+                .Skip(10)
+                .Take(10)
+                .Select(x => x.Id)
+                .ToArray();
+
+            var count = _provider.BulkDelete<DescribedThing>(x => list.Any(y => y == x.Id));
+            Assert.AreEqual(list.Length, count);
+            var query = _provider
+                .Query<DescribedThing>()
+                .Where(x => Enumerable.Contains(list, x.Id))
+                .ToArray();
+            Assert.IsFalse(query.Any());
         }
 
         [TestMethod]

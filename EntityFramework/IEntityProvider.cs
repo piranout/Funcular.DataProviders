@@ -159,7 +159,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        IEnumerable<TEntity> Insert<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new();
+        IEnumerable<TEntity> Insert<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new();
 
         /// <summary>
         ///     Update a collection of entity instances in the database, and commit once.
@@ -172,7 +172,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        IEnumerable<TEntity> Update<TEntity, TId>(IEnumerable<TEntity> entities, bool safe = true) where TEntity : class, new();
+        IEnumerable<TEntity> Update<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new();
 
         /// <summary>
         ///     Set the context’s entry for this instance to EntityState.Modified.
@@ -194,5 +194,22 @@ namespace Funcular.DataProviders.EntityFramework
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
         void SaveChangesAsync<TId>();
+
+        /// <summary>
+        ///     Add a collection of entity instances to the data context
+        ///     and commits the transaction.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <typeparam name="TId"></typeparam>
+        /// <param name="entities"></param>
+        /// <returns></returns>
+        IEnumerable<TEntity> BulkInsert<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new();
+
+        void BulkUpdate<TEntity,TProp>(
+            Expression<Func<TEntity,bool>> predicate,
+            Expression<Func<TEntity,TProp>> propertyExpression, 
+            Expression<Func<TEntity, TProp>> assignmentExpression) where TEntity : class, new();
+
+        int BulkDelete<TEntity>(Expression<Func<TEntity,bool>> predicate) where TEntity : class, new();
     }
 }
