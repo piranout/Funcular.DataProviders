@@ -54,21 +54,23 @@ namespace Funcular.DataProviders.EntityFramework
         #region Instance members
         private readonly ConcurrentDictionary<Type, object> _dbSets =
             new ConcurrentDictionary<Type, object>();
-
-        private BaseContext _context;
-
-        protected object _currentUser;
         private bool _disposed;
 
-        public BaseContext Context { get { return this._context; } }
+        protected BaseContext _context;
+
+        protected object _currentUser;
+
+        // TODO:
+        // Static ConcurrentDictionary<string,ThreadLocal<BaseContext>>; (key = connection string)
+        public virtual BaseContext Context { get { return this._context; } }
 
         /// <summary>
         ///     Get a reference to the context’s underlying database.
         /// </summary>
         /// <returns></returns>
-        public Database GetDatabase()
+        public virtual Database GetDatabase()
         {
-            return this._context.Database;
+            return this.Context.Database;
         }
         #endregion
 
@@ -80,7 +82,7 @@ namespace Funcular.DataProviders.EntityFramework
             this._context = context;
 #if DEBUG
             Configuration.Log = s => Debug.WriteLine(s);
-            Context.Database.Log = s => Debug.WriteLine(s);
+            _context.Database.Log = s => Debug.WriteLine(s);
 #endif
 
         }
@@ -94,21 +96,26 @@ namespace Funcular.DataProviders.EntityFramework
             this._context = context;
 #if DEBUG
             Configuration.Log = s => Debug.WriteLine(s);
-            Context.Database.Log = s => Debug.WriteLine(s);
+            _context.Database.Log = s => Debug.WriteLine(s);
 #endif
         }
+
+        protected EntityFrameworkProvider()
+        {
+        }
+
         #endregion
 
 
         #region IEntityProvider implementation
-        public Func<Type, bool> IsEntityType { get { return Context.IsEntityType; } set { this._context.IsEntityType = value; } }
+        public virtual Func<Type, bool> IsEntityType { get { return Context.IsEntityType; } set { this.Context.IsEntityType = value; } }
 
         /// <summary>
         ///     Set the user Id to use when updating ICreateable and IModifyable entities
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <param name="user"></param>
-        public void SetCurrentUser<TId>(TId user)
+        public virtual void SetCurrentUser<TId>(TId user)
         {
             this._currentUser = user;
         }
@@ -118,7 +125,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
-        public TId GetCurrentUser<TId>()
+        public virtual TId GetCurrentUser<TId>()
         {
             return (TId)(this._currentUser ?? (object)"Unknown");
         }
@@ -145,7 +152,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     to be included or fetched in order to reference them in a query predicate.
         /// </param>
         /// <returns></returns>
-        public IQueryable<TEntity> Query<TEntity>(params Expression<Func<TEntity, object>>[] includes)
+        public virtual IQueryable<TEntity> Query<TEntity>(params Expression<Func<TEntity, object>>[] includes)
             where TEntity : class, new()
         {
             IQueryable<TEntity> returnValue = GetDbSet<TEntity>();
@@ -162,7 +169,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     Adds an entity to the context without saving.
         /// </summary>
         /// <param name="entity"></param>
-        public void Add<TEntity, TId>(TEntity entity) where TEntity : class, new()
+        public virtual void Add<TEntity, TId>(TEntity entity) where TEntity : class, new()
         {
             if (Context.Entry(entity).State != EntityState.Detached)
                 return;
@@ -180,7 +187,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        public TEntity Insert<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
+        public virtual TEntity Insert<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
         {
             GetDbSet<TEntity>().Add(entity);
             if (safe)
@@ -201,7 +208,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        public IEnumerable<TEntity> Insert<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new()
+        public virtual IEnumerable<TEntity> Insert<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new()
         {
             var entityArray = entities.ToArray();
             foreach (var entity in entityArray)
@@ -223,63 +230,63 @@ namespace Funcular.DataProviders.EntityFramework
         /// <typeparam name="TId"></typeparam>
         /// <param name="entities"></param>
         /// <returns></returns>
-        public IEnumerable<TEntity> BulkInsert<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new()
+        public virtual IEnumerable<TEntity> BulkInsert<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new()
         {
             var createables = SetCreatableProperties<TEntity, TId>(entities).ToArray();
             EFBatchOperation.For(Context, GetDbSet<TEntity>()).InsertAll(createables);
             return createables;
         }
 
-        public int BulkDelete<TEntity>(Expression<Func<TEntity,bool>> predicate) where TEntity : class, new()
+        public virtual int BulkDelete<TEntity>(Expression<Func<TEntity,bool>> predicate) where TEntity : class, new()
         {
             return EFBatchOperation.For(Context, GetDbSet<TEntity>())
                 .Where(predicate)
                 .Delete();
         }
 
-/*
-        /// <summary>
-        /// Updates a single property of the entity without committing.  You must 
-        /// call <see cref="Save"/> afterwards to execute the update command.
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <typeparam name="TId"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="entity"></param>
-        /// <param name="expression"></param>
-        /// <param name="value"></param>
-        public void BulkUpdate<TEntity, TId, TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> expression,
-            TProperty value) where TEntity : class, IIdentity<TId>, new()
-        {
-            var id = new TEntity() {Id = entity.Id};
-            SetModifyableProperties<TId>(entity as IModifyable<TId>);
-            Context.AttachAndModify<TEntity>(id).Set<TProperty>(expression, value);
-        }
+        /*
+                /// <summary>
+                /// Updates a single property of the entity without committing.  You must 
+                /// call <see cref="Save"/> afterwards to execute the update command.
+                /// </summary>
+                /// <typeparam name="TEntity"></typeparam>
+                /// <typeparam name="TId"></typeparam>
+                /// <typeparam name="TProperty"></typeparam>
+                /// <param name="entity"></param>
+                /// <param name="expression"></param>
+                /// <param name="value"></param>
+                public void BulkUpdate<TEntity, TId, TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> expression,
+                    TProperty value) where TEntity : class, IIdentity<TId>, new()
+                {
+                    var id = new TEntity() {Id = entity.Id};
+                    SetModifyableProperties<TId>(entity as IModifyable<TId>);
+                    Context.AttachAndModify<TEntity>(id).Set<TProperty>(expression, value);
+                }
 
 
-        /// <summary>
-        /// Updates multiple properties of the entity without committing. You must 
-        /// call <see cref="Save"/> afterwards to execute the update command.
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <typeparam name="TId"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="entity"></param>
-        /// <param name="expressions"></param>
-        /// <param name="value"></param>
-        public void BulkUpdate<TEntity, TId, TProperty>(TEntity entity, ICollection<Expression<Func<TEntity, TProperty>>> expressions,
-            TProperty value) where TEntity : class, IIdentity<TId>, new()
-        {
-            var id = new TEntity() { Id = entity.Id };
-            SetModifyableProperties(entity as IModifyable<TId>);
-            var attachAndModifyContext = Context.AttachAndModify<TEntity>(id);
-            foreach (var expression in expressions)
-            {
-                attachAndModifyContext.Set<TProperty>(expression, value);
-            }
-        }*/
+                /// <summary>
+                /// Updates multiple properties of the entity without committing. You must 
+                /// call <see cref="Save"/> afterwards to execute the update command.
+                /// </summary>
+                /// <typeparam name="TEntity"></typeparam>
+                /// <typeparam name="TId"></typeparam>
+                /// <typeparam name="TProperty"></typeparam>
+                /// <param name="entity"></param>
+                /// <param name="expressions"></param>
+                /// <param name="value"></param>
+                public void BulkUpdate<TEntity, TId, TProperty>(TEntity entity, ICollection<Expression<Func<TEntity, TProperty>>> expressions,
+                    TProperty value) where TEntity : class, IIdentity<TId>, new()
+                {
+                    var id = new TEntity() { Id = entity.Id };
+                    SetModifyableProperties(entity as IModifyable<TId>);
+                    var attachAndModifyContext = Context.AttachAndModify<TEntity>(id);
+                    foreach (var expression in expressions)
+                    {
+                        attachAndModifyContext.Set<TProperty>(expression, value);
+                    }
+                }*/
 
-        public void BulkUpdate<TEntity,TProp>(
+        public virtual void BulkUpdate<TEntity,TProp>(
             Expression<Func<TEntity,bool>> predicate,
             Expression<Func<TEntity,TProp>> propertyExpression, 
             Expression<Func<TEntity, TProp>> assignmentExpression) where TEntity : class, new()
@@ -301,7 +308,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        public TEntity Update<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
+        public virtual TEntity Update<TEntity, TId>(TEntity entity, bool safe = true) where TEntity : class, new()
         {
             var dbEntityEntry = this.Context.Entry(entity);
             if (dbEntityEntry.State == EntityState.Detached)
@@ -325,7 +332,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     it is possible to encounter silent exceptions.
         /// </param>
         /// <returns></returns>
-        public IEnumerable<TEntity> Update<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new()
+        public virtual IEnumerable<TEntity> Update<TEntity, TId>(ICollection<TEntity> entities, bool safe = true) where TEntity : class, new()
         {
             var entityArray = SetModifyableProperties<TEntity, TId>(entities).ToArray();
             foreach (var entity in entityArray)
@@ -346,7 +353,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     Delete an entity.
         /// </summary>
         /// <param name="entity"></param>
-        public void Delete<TEntity, TId>(TEntity entity) where TEntity : class, new()
+        public virtual void Delete<TEntity, TId>(TEntity entity) where TEntity : class, new()
         {
             GetDbSet<TEntity>().Remove(entity);
             SaveChanges<TId>();
@@ -367,7 +374,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     Saves all modifications to the context without enforcing business logic.
         ///     Use sparingly and in special cases only; prefer the typed options.
         /// </summary>
-        public void Save()
+        public virtual void Save()
         {
             this.Context.SaveChanges();
         }
@@ -379,7 +386,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// <param name="entity"></param>
         public void SetDetached<TEntity>(TEntity entity) where TEntity : class
         {
-            this._context.Entry(entity).State = EntityState.Detached;
+            this.Context.Entry(entity).State = EntityState.Detached;
         }
 
         /// <summary>
@@ -387,9 +394,9 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entity"></param>
-        public void SetModified<TEntity>(TEntity entity) where TEntity : class
+        public virtual void SetModified<TEntity>(TEntity entity) where TEntity : class
         {
-            this._context.Entry(entity).State = EntityState.Modified;
+            this.Context.Entry(entity).State = EntityState.Modified;
         }
 
         /// <summary>
@@ -399,7 +406,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// <param name="entity"></param>
         public void SetAdded<TEntity>(TEntity entity) where TEntity : class
         {
-            this._context.Entry(entity).State = EntityState.Added;
+            this.Context.Entry(entity).State = EntityState.Added;
         }
 
         /// <summary>
@@ -407,7 +414,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
-        public int SaveChanges<TId>()
+        public virtual int SaveChanges<TId>()
         {
             SetCreatableModifyableProperties<TId>();
             try
@@ -426,7 +433,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TId"></typeparam>
         /// <returns></returns>
-        public void SaveChangesAsync<TId>()
+        public virtual void SaveChangesAsync<TId>()
         {
             SetCreatableModifyableProperties<TId>();
             Context.SaveChangesAsync().Start();

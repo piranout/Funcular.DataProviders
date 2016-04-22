@@ -53,8 +53,8 @@
       <HintPath>..\packages\Funcular.ExtensionMethods.1.0.0\lib\net45\Funcular.ExtensionMethods.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Funcular.IdGenerators, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Funcular.IdGenerators.1.0\lib\net45\Funcular.IdGenerators.dll</HintPath>
+    <Reference Include="Funcular.IdGenerators, Version=2.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Funcular.IdGenerators.2.5\lib\Funcular.IdGenerators.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IQToolkit, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -76,6 +76,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrentEntityFrameworkProviderIntegrationTests.cs" />
     <Compile Include="Entities\Mappings\DescribedThingMapping.cs" />
     <Compile Include="Entities\Mappings\DescribedThingMapping.partial.cs" />
     <Compile Include="Entities\Mappings\TransactionItemMapping.cs" />
@@ -86,7 +87,7 @@
     <Compile Include="Entities\TransactionItem.cs" />
     <Compile Include="Entities\TransactionItem.partial.cs" />
     <Compile Include="Entities\TransactionItemAmendment.cs" />
-    <Compile Include="IntegrationTests.cs" />
+    <Compile Include="EntityFrameworkProviderIntegrationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

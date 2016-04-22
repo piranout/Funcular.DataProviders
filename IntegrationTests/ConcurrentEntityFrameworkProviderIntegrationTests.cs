@@ -1,40 +1,4 @@
-﻿#region File info
-// *********************************************************************************************************
-// TODO: IdGenerator Format (use configured delimiter value & positions w/sb.insert)
-// Funcular.DataProviders>IntegrationTests>IntegrationTests.cs
-// Created: 2015-07-02 3:52 PM
-// Updated: 2015-07-07 3:48 PM
-// By: Paul Smith 
-// 
-// *********************************************************************************************************
-// LICENSE: The MIT License (MIT)
-// *********************************************************************************************************
-// Copyright (c) 2010-2015 <copyright holders>
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-// 
-// *********************************************************************************************************
-#endregion
-
-
-#region Usings
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -46,13 +10,11 @@ using Funcular.IdGenerators.Base36;
 using Funcular.Ontology.Archetypes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MockData;
-#endregion
-
 
 namespace Funcular.DataProviders.IntegrationTests
 {
     [TestClass]
-    public class IntegrationTests
+    public class ConcurrentEntityFrameworkProviderIntegrationTests
     {
         private readonly object _lockObj = new object();
         private readonly Random _rnd = new Random();
@@ -82,7 +44,7 @@ namespace Funcular.DataProviders.IntegrationTests
                 delimiter: "-",
                 delimiterPositions: new[] {15, 10, 5});
             var connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-            this._provider = new EntityFrameworkProvider(connectionString)
+            this._provider = new ConcurrentEntityFrameworkProvider(connectionString)
             {
                 IsEntityType = type => type.IsSubclassOf(typeof (Createable<>))
             };
