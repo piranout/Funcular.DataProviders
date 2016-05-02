@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Funcular.DataProviders.EntityFramework;
 using Funcular.DataProviders.IntegrationTests.Entities;
 using Funcular.ExtensionMethods;
@@ -19,7 +21,7 @@ namespace Funcular.DataProviders.IntegrationTests
         private readonly object _lockObj = new object();
         private readonly Random _rnd = new Random();
         private Base36IdGenerator _base36;
-        private EntityFrameworkProvider _provider;
+        private ConcurrentEntityFrameworkProvider _provider;
 
         public Random Rnd
         {
@@ -191,7 +193,7 @@ namespace Funcular.DataProviders.IntegrationTests
                 things.Add(described);
                 described.Label = randomValue;
             }
-            this._provider.BulkInsert<DescribedThing, string>(things);
+            this._provider.BulkInsert<DescribedThing,string>(things);//.BulkInsert<DescribedThing, string>(things);
             var retrieved = this._provider.Query<DescribedThing>()
                 .Where(myDescribed => myDescribed.Label == randomValue);
             Assert.AreEqual(retrieved.Count(), 10);
@@ -201,9 +203,9 @@ namespace Funcular.DataProviders.IntegrationTests
         public void Bulk_Updated_Entities_Are_Changed()
         {
             this._provider.BulkUpdate<DescribedThing,string>(
-                x => x.Description.StartsWith("h"),
-                x => x.Label,
-                x => "");
+                predicate: x => x.Description.StartsWith("h"), 
+                propertyExpression: x => x.Label, 
+                assignmentExpression: x => "");
             var things = this._provider.Query<DescribedThing>()
                 .Where(x => x.Description.StartsWith("h"));
             Assert.IsTrue(things.All(x => x.Label == ""));
@@ -276,11 +278,30 @@ namespace Funcular.DataProviders.IntegrationTests
                 Assert.AreEqual(retrieved.Modifications.Count, 2);
         }
 
+        [TestMethod]
+        public void Two_Readers_Can_Read_Simultaneously()
+        {
+            var count = 10;
+            var retrieved = GetThingsUsingTwoQueries(10);
+            Assert.AreEqual(retrieved.Count, count * 2);
+        }
+
+
+        [TestMethod]
+        public void Multiple_Concurrent_Queries_Can_Execute()
+        {
+            var count = 8;
+            var retrieved = RunConcurrentQueriesAsync(count);
+            Assert.AreEqual(Math.Pow(count, 2), retrieved.Count);
+        }
+
+
+
         private DescribedThing CreateDescribedThing()
         {
             var described = new DescribedThing
             {
-                Description = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay),
+                Description = $"{Product.Department()} {DateTime.Now.TimeOfDay}",
                 Label = Internet.DomainWord() + " " + DateTime.Now.Ticks,
                 NullableIntProperty = Rnd.Next(10) < 6 ? null : (int?) Rnd.Next(1000000),
                 BoolProperty = Rnd.Next(2) == 1,
@@ -314,6 +335,55 @@ namespace Funcular.DataProviders.IntegrationTests
                 transaction.Modifications.Add(amendment);
             }
             return transaction;
+        }
+
+        private ICollection<DescribedThing> GetThingsUsingTwoQueries(int count)
+        {
+            var ret = new List<DescribedThing>();
+            var query1 = _provider.Query<DescribedThing>()
+                .Where(x => x.BoolProperty == true);
+            var query2 = _provider.Query<DescribedThing>()
+                .Where(x => x.BoolProperty == false);
+            for (int i = 0; i < count; i++)
+            {
+                ret.Add(query1.OrderBy(x => x.Id).Skip(i).Take(1).FirstOrDefault());
+                ret.Add(query2.OrderBy(x => x.Id).Skip(i).Take(1).FirstOrDefault());
+            }
+            return ret;
+        }
+
+
+        private ICollection<DescribedThing> RunConcurrentQueriesAsync(int count)
+        {
+            ICollection<DescribedThing> ret = new List<DescribedThing>();
+            Task[] tasks = new Task[count];
+            for (int i = 0; i < count; i++)
+            {
+                var i1 = i;
+                tasks[i1] = Task.Factory.StartNew(() =>
+                {
+                    var thread = Thread.CurrentThread.ManagedThreadId;
+                    try
+                    {
+                        var query = _provider.Query<DescribedThing>()
+                            .Where(x => x.BoolProperty == true);
+                        query
+                            .OrderBy(x => x.Id)
+                            .Skip(i1)
+                            .Take(count)
+                            .ToList()
+                            .ForEach(e => ret.Add(e));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        Debug.WriteLine($"Exception from thread {thread}:");
+                        Debug.WriteLine(e);
+                    }
+                });
+            }
+            Task.WaitAll(tasks);
+            return ret;
         }
     }
 }

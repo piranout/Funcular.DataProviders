@@ -41,9 +41,13 @@ using System.Data.Entity.Infrastructure;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using EntityFramework.BulkInsert.Extensions;
 using EntityFramework.Utilities;
 using Funcular.DataProviders.EntityFramework.SqlServer;
 using Funcular.Ontology.Archetypes;
+using static System.Reflection.MethodBase;
+
 #endregion
 
 
@@ -52,13 +56,14 @@ namespace Funcular.DataProviders.EntityFramework
     public class EntityFrameworkProvider : IEntityProvider, IDisposable
     {
         #region Instance members
-        private readonly ConcurrentDictionary<Type, object> _dbSets =
+        protected readonly ConcurrentDictionary<Type, object> _dbSets =
             new ConcurrentDictionary<Type, object>();
-        private bool _disposed;
+        protected bool _disposed;
 
         protected BaseContext _context;
 
         protected object _currentUser;
+        protected string _nameOrConnectionString;
 
         // TODO:
         // Static ConcurrentDictionary<string,ThreadLocal<BaseContext>>; (key = connection string)
@@ -78,6 +83,7 @@ namespace Funcular.DataProviders.EntityFramework
         #region Constructors
         public EntityFrameworkProvider(string connectionString)
         {
+            _nameOrConnectionString = connectionString;
             var context = new BaseContext(connectionString);
             this._context = context;
 #if DEBUG
@@ -155,14 +161,22 @@ namespace Funcular.DataProviders.EntityFramework
         public virtual IQueryable<TEntity> Query<TEntity>(params Expression<Func<TEntity, object>>[] includes)
             where TEntity : class, new()
         {
-            IQueryable<TEntity> returnValue = GetDbSet<TEntity>();
-            if (includes == null)
+            var methodName = GetCurrentMethod().Name;
+            var threadId = Thread.CurrentThread.ManagedThreadId;
+            Debug.WriteLine($"Thread {threadId} entered {methodName}.");
+            
+
+                IQueryable<TEntity> returnValue = GetDbSet<TEntity>();
+                if (includes == null)
+                    return returnValue;
+                foreach (var include in includes)
+                {
+                    returnValue = returnValue.Include(include);
+                }
+                Debug.WriteLine($"Thread {threadId} leaving {methodName}.");
                 return returnValue;
-            foreach (var include in includes)
-            {
-                returnValue = returnValue.Include(include);
-            }
-            return returnValue;
+                
+            
         }
 
         /// <summary>
@@ -233,7 +247,9 @@ namespace Funcular.DataProviders.EntityFramework
         public virtual IEnumerable<TEntity> BulkInsert<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new()
         {
             var createables = SetCreatableProperties<TEntity, TId>(entities).ToArray();
-            EFBatchOperation.For(Context, GetDbSet<TEntity>()).InsertAll(createables);
+            // var dbSet = GetDbSet<TEntity>();
+            Context.BulkInsert(createables);
+            // EFBatchOperation.For(Context, dbSet).InsertAll(createables);
             return createables;
         }
 
@@ -355,7 +371,9 @@ namespace Funcular.DataProviders.EntityFramework
         /// <param name="entity"></param>
         public virtual void Delete<TEntity, TId>(TEntity entity) where TEntity : class, new()
         {
-            GetDbSet<TEntity>().Remove(entity);
+            var dbSet = GetDbSet<TEntity>();
+            dbSet.Attach(entity);
+            dbSet.Remove(entity);
             SaveChanges<TId>();
         }
 
@@ -547,42 +565,5 @@ namespace Funcular.DataProviders.EntityFramework
             GC.SuppressFinalize(this);
         }
         #endregion
-    }
-
-    public interface IEntityPropertyUpdate
-    {
-        
-    }
-
-    
-
-    public class UpdateOperations
-    {
-        public UpdateOperations()
-        {
-            SetOperations = new List<IEntityPropertyUpdate>();
-        }
-
-        public ICollection<IEntityPropertyUpdate> SetOperations { get; private set; } 
-    }
-
-    public class PropertySetOperation<T,TProp> : IEntityPropertyUpdate
-    {
-        public PropertySetOperation()
-        {
-            
-        }
-        public T Entity { get; set; }
-        public Expression<Func<T, TProp>> Property { get; set; }
-        public TProp Value { get; set; }
-
-    }
-
-    public class ReferencePropertySetOperation<T, TProp> : IEntityPropertyUpdate where TProp : class
-    {
-        public T Entity { get; set; }
-        public Expression<Func<T, TProp>> Property { get; set; }
-        public TProp Value { get; set; }
-
     }
 }

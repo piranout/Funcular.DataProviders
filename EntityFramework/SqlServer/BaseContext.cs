@@ -64,6 +64,7 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
         private static Func<Type, bool> _isEntityType = type => type.IsClass && !type.IsAbstract;
 
         protected readonly HashSet<string> _configuredAssemblies = new HashSet<string>();
+        private static readonly object _lock = new object();
 
         public BaseContext()
         {
@@ -91,15 +92,18 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
+            lock (_lock)
+            {
+                modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
 
-            configureModel(modelBuilder);
+                configureModel(modelBuilder);
 
-            //Specify a configuration if you would like to use code first migration
-            //Database.SetInitializer(new MigrateDatabaseToLatestVersion<Context, Configuration>());
-            Database.SetInitializer<BaseContext>(null);
+                //Specify a configuration if you would like to use code first migration
+                //Database.SetInitializer(new MigrateDatabaseToLatestVersion<Context, Configuration>());
+                Database.SetInitializer<BaseContext>(null);
 
-            base.OnModelCreating(modelBuilder);
+                base.OnModelCreating(modelBuilder);
+            }
         }
 
         /// <summary>
