@@ -45,6 +45,7 @@ using System.Threading;
 using EntityFramework.BulkInsert.Extensions;
 using EntityFramework.Utilities;
 using Funcular.DataProviders.EntityFramework.SqlServer;
+using Funcular.ExtensionMethods;
 using Funcular.Ontology.Archetypes;
 using static System.Reflection.MethodBase;
 
@@ -143,7 +144,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// <typeparam name="TKey"></typeparam>
         /// <param name="id"></param>
         /// <returns></returns>
-        public TEntity Get<TEntity, TKey>(TKey id) where TEntity : class, new()
+        public virtual TEntity Get<TEntity, TKey>(TKey id) where TEntity : class, new()
         {
             return GetDbSet<TEntity>().Find(id);
         }
@@ -381,7 +382,7 @@ namespace Funcular.DataProviders.EntityFramework
         ///     Delete an entity by id.
         /// </summary>
         /// <param name="id"></param>
-        public void Delete<TEntity, TId>(TId id) where TEntity : class, new()
+        public virtual void Delete<TEntity, TId>(TId id) where TEntity : class, new()
         {
             var entity = Get<TEntity, TId>(id);
             GetDbSet<TEntity>().Remove(entity);
@@ -462,7 +463,7 @@ namespace Funcular.DataProviders.EntityFramework
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
-        public DbSet<TEntity> GetDbSet<TEntity>() where TEntity : class, new()
+        public virtual DbSet<TEntity> GetDbSet<TEntity>() where TEntity : class, new()
         {
             return (DbSet<TEntity>)this._dbSets.GetOrAdd(typeof(TEntity), x => Context.Set<TEntity>());
         }
@@ -499,10 +500,13 @@ namespace Funcular.DataProviders.EntityFramework
                 createable.CreatedBy = GetCurrentUser<TId>();
             if (createable.DateCreatedUtc == default(DateTime))
                 createable.DateCreatedUtc = DateTime.UtcNow;
+            
         }
 
         protected virtual IEnumerable<TEntity> SetCreatableProperties<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new()
         {
+            if (false == entities.HasContents())
+                return Enumerable.Empty<TEntity>();
             var createables = entities
                 .OfType<ICreateable<TId>>()
                 .Select(item => item)
@@ -516,6 +520,8 @@ namespace Funcular.DataProviders.EntityFramework
 
         protected virtual IEnumerable<TEntity> SetModifyableProperties<TEntity, TId>(ICollection<TEntity> entities) where TEntity : class, new()
         {
+            if (false == entities.HasContents())
+                return Enumerable.Empty<TEntity>();
             var modifyables = entities
                 .OfType<IModifyable<TId>>()
                 .ToArray();

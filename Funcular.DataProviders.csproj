@@ -78,12 +78,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EntityFramework\ConcurrentEntityFrameworkProvider.cs" />
+    <Compile Include="EntityFramework\IConcurrentEntityProvider.cs" />
+    <Compile Include="EntityFramework\IContextDisposer.cs" />
     <Compile Include="EntityFramework\IEntityPropertyUpdate.cs" />
+    <Compile Include="EntityFramework\IUnitOfWork.cs" />
     <Compile Include="EntityFramework\PropertySetOperation.cs" />
     <Compile Include="EntityFramework\ReferencePropertySetOperation.cs" />
     <Compile Include="EntityFramework\SqlServer\BaseContext.cs" />
     <Compile Include="EntityFramework\EntityFrameworkProvider.cs" />
     <Compile Include="EntityFramework\IEntityProvider.cs" />
+    <Compile Include="EntityFramework\UnitOfWork.cs" />
     <Compile Include="EntityFramework\UpdateOperations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EntityFramework\SqlServer\SqlServerInvariantDbConfiguration.cs" />
@@ -100,6 +104,8 @@
     <None Include="NuGet\Funcular.DataProviders.0.5.5.2.nupkg" />
     <None Include="NuGet\Funcular.DataProviders.0.6.0.0.nupkg" />
     <None Include="NuGet\Funcular.DataProviders.0.6.1.0.nupkg" />
+    <None Include="NuGet\Funcular.DataProviders.0.8.5.0.nupkg" />
+    <None Include="NuGet\Funcular.DataProviders.0.9.5.0.nupkg" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

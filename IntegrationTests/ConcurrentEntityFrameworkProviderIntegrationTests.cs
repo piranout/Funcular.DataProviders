@@ -51,7 +51,7 @@ namespace Funcular.DataProviders.IntegrationTests
                 IsEntityType = type => type.IsSubclassOf(typeof (Createable<>))
             };
             this._provider.SetCurrentUser("Funcular\\Paul");
-            this._provider.GetDatabase().Log = s => Debug.WriteLine(s);
+            this._provider.Log = s => Debug.WriteLine(s);
             Createable<string>.IdentityFunction = () => this._base36.NewId();
         }
 
@@ -129,12 +129,15 @@ namespace Funcular.DataProviders.IntegrationTests
             var newDescription = string.Format("{0} {1}", Product.Department(), DateTime.Now.TimeOfDay);
             retrieved.Description = newDescription;
             this._provider.Update<DescribedThing, string>(retrieved);
-            retrieved = this._provider.Query<DescribedThing>()
-                .FirstOrDefault(myDescribed => myDescribed.Id == id);
-            if (retrieved != null)
-                Assert.AreEqual((object) retrieved.Description, newDescription);
-            else
-                Assert.Fail("Description was not updated");
+            using (var unitOfWork = new UnitOfWork())
+            {
+                retrieved = this._provider.Query<DescribedThing>(unitOfWork)
+                    .FirstOrDefault(myDescribed => myDescribed.Id == id);
+                if (retrieved != null)
+                    Assert.AreEqual((object) retrieved.Description, newDescription);
+                else
+                    Assert.Fail("Description was not updated");
+            }
         }
 
         [TestMethod]
@@ -148,22 +151,25 @@ namespace Funcular.DataProviders.IntegrationTests
             describedUppercase.Description = originalDescription.ToUpper();
             this._provider.Insert<DescribedThing, string>(describedUppercase);
 
-            var retrievedCount = this._provider.Query<DescribedThing>()
-                .Count(d => d.Description == originalDescription);
-            var uppercaseCount = this._provider.Query<DescribedThing>()
-                .Count(d => d.Description == originalDescription.ToUpper());
+            using (var unitOfWork = new UnitOfWork())
+            {
+                var retrievedCount = this._provider.Query<DescribedThing>(unitOfWork)
+                    .Count(d => d.Description == originalDescription);
+                var uppercaseCount = this._provider.Query<DescribedThing>(unitOfWork)
+                    .Count(d => d.Description == originalDescription.ToUpper());
             
-            // SQL server comparison
-            Assert.IsTrue(retrievedCount == uppercaseCount);
+                // SQL server comparison
+                Assert.IsTrue(retrievedCount == uppercaseCount);
 
-            // .NET framework comparison using CaseInsensitiveQueryable:
-            uppercaseCount = this._provider.Query<DescribedThing>()
-                .Where(d => d.Description == originalDescription.ToUpper())
-                .ToList()
-                .AsQueryable()
-                .AsCaseInsensitive()
-                .Count();
-            Assert.IsTrue(retrievedCount == uppercaseCount);
+                // .NET framework comparison using CaseInsensitiveQueryable:
+                uppercaseCount = this._provider.Query<DescribedThing>()
+                    .Where(d => d.Description == originalDescription.ToUpper())
+                    .ToList()
+                    .AsQueryable()
+                    .AsCaseInsensitive()
+                    .Count();
+                Assert.IsTrue(retrievedCount == uppercaseCount);
+            }
         }
 
         [TestMethod]
@@ -172,13 +178,16 @@ namespace Funcular.DataProviders.IntegrationTests
             var described = CreateDescribedThing();
             var id = described.Id;
             this._provider.Insert<DescribedThing, string>(described);
-            var retrieved = this._provider.Query<DescribedThing>()
-                .FirstOrDefault(myDescribed => myDescribed.Id == id);
-            Assert.IsNotNull(retrieved);
-            this._provider.Delete<DescribedThing, string>(id);
-            retrieved = this._provider.Query<DescribedThing>()
-                .FirstOrDefault(myDescribed => myDescribed.Id == id);
-            Assert.IsNull(retrieved);
+            using (var unitOfWork = new UnitOfWork())
+            {
+                var retrieved = this._provider.Query<DescribedThing>(unitOfWork)
+                    .FirstOrDefault(myDescribed => myDescribed.Id == id);
+                Assert.IsNotNull(retrieved);
+                this._provider.Delete<DescribedThing, string>(id);
+                retrieved = this._provider.Query<DescribedThing>(unitOfWork)
+                    .FirstOrDefault(myDescribed => myDescribed.Id == id);
+                Assert.IsNull(retrieved);
+            }
         }
 
 
@@ -194,9 +203,12 @@ namespace Funcular.DataProviders.IntegrationTests
                 described.Label = randomValue;
             }
             this._provider.BulkInsert<DescribedThing,string>(things);//.BulkInsert<DescribedThing, string>(things);
-            var retrieved = this._provider.Query<DescribedThing>()
-                .Where(myDescribed => myDescribed.Label == randomValue);
-            Assert.AreEqual(retrieved.Count(), 10);
+            using (var unitOfWork = new UnitOfWork())
+            {
+                var retrieved = this._provider.Query<DescribedThing>(unitOfWork)
+                    .Where(myDescribed => myDescribed.Label == randomValue);
+                Assert.AreEqual(retrieved.Count(), 10);
+            }
         }
 
         [TestMethod]
@@ -206,9 +218,12 @@ namespace Funcular.DataProviders.IntegrationTests
                 predicate: x => x.Description.StartsWith("h"), 
                 propertyExpression: x => x.Label, 
                 assignmentExpression: x => "");
-            var things = this._provider.Query<DescribedThing>()
-                .Where(x => x.Description.StartsWith("h"));
-            Assert.IsTrue(things.All(x => x.Label == ""));
+            using (var unitOfWork = new UnitOfWork())
+            {
+                var things = this._provider.Query<DescribedThing>(unitOfWork)
+                    .Where(x => x.Description.StartsWith("h"));
+                Assert.IsTrue(things.All(x => x.Label == ""));
+            }
         }
 
         [TestMethod]
@@ -219,20 +234,24 @@ namespace Funcular.DataProviders.IntegrationTests
             {
                 describeds.Add(CreateDescribedThing());
             }
-            var list = _provider.Query<DescribedThing>()
-                .OrderBy(x => x.Id)
-                .Skip(10)
-                .Take(10)
-                .Select(x => x.Id)
-                .ToArray();
+            using (var unitOfWork = new UnitOfWork())
+            {
 
-            var count = _provider.BulkDelete<DescribedThing>(x => list.Any(y => y == x.Id));
-            Assert.AreEqual(list.Length, count);
-            var query = _provider
-                .Query<DescribedThing>()
-                .Where(x => Enumerable.Contains(list, x.Id))
-                .ToArray();
-            Assert.IsFalse(query.Any());
+                var list = _provider.Query<DescribedThing>(unitOfWork)
+                    .OrderBy(x => x.Id)
+                    .Skip(10)
+                    .Take(10)
+                    .Select(x => x.Id)
+                    .ToArray();
+
+                var count = _provider.BulkDelete<DescribedThing>(x => list.Any(y => y == x.Id));
+                Assert.AreEqual(list.Length, count);
+                var query = _provider
+                    .Query<DescribedThing>(unitOfWork)
+                    .Where(x => Enumerable.Contains(list, x.Id))
+                    .ToArray();
+                Assert.IsFalse(query.Any());
+            }
         }
 
         [TestMethod]
@@ -290,7 +309,7 @@ namespace Funcular.DataProviders.IntegrationTests
         [TestMethod]
         public void Multiple_Concurrent_Queries_Can_Execute()
         {
-            var count = 8;
+            var count = 24;
             var retrieved = RunConcurrentQueriesAsync(count);
             Assert.AreEqual(Math.Pow(count, 2), retrieved.Count);
         }
@@ -365,8 +384,9 @@ namespace Funcular.DataProviders.IntegrationTests
                     var thread = Thread.CurrentThread.ManagedThreadId;
                     try
                     {
+                        var myBool = i1%2 == 0;
                         var query = _provider.Query<DescribedThing>()
-                            .Where(x => x.BoolProperty == true);
+                            .Where(x => x.BoolProperty == myBool);
                         query
                             .OrderBy(x => x.Id)
                             .Skip(i1)

@@ -63,8 +63,10 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
 
         private static Func<Type, bool> _isEntityType = type => type.IsClass && !type.IsAbstract;
 
-        protected readonly HashSet<string> _configuredAssemblies = new HashSet<string>();
         private static readonly object _lock = new object();
+
+        protected readonly HashSet<string> _configuredAssemblies = new HashSet<string>();
+
 
         public BaseContext()
         {
@@ -84,11 +86,11 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
             Database.SetInitializer<BaseContext>(null);
         }
 
-        public static List<Type> TypesToIgnore { get { return _typesToIgnore; } }
+        public static List<Type> TypesToIgnore => _typesToIgnore;
 
         public Func<Type, bool> IsEntityType { get { return _isEntityType; } set { _isEntityType = value; } }
 
-        public static HashSet<string> EntityAssemblyNames { get { return _entityAssemblyNames; } }
+        public static HashSet<string> EntityAssemblyNames => _entityAssemblyNames;
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -98,7 +100,7 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
 
                 configureModel(modelBuilder);
 
-                //Specify a configuration if you would like to use code first migration
+                //Specify a configuration if you would like to use code first migration, e.g.:
                 //Database.SetInitializer(new MigrateDatabaseToLatestVersion<Context, Configuration>());
                 Database.SetInitializer<BaseContext>(null);
 
@@ -121,32 +123,16 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
             //First build a set of all of the Assembly names which should be examined
             //through reflection for any objects extending BaseEntity
             // TODO: Make a set for Mapping classes; expose publicly
-            IEqualityComparer<AssemblyName> x =
+            IEqualityComparer<AssemblyName> equalityComparer =
                 new FuncEqualityComparer<AssemblyName>((name, assemblyName) => name.FullName == assemblyName.FullName);
-            var assemblyNames = new HashSet<AssemblyName>(x);
-            //{
-            //    // Assembly.GetAssembly(typeof (BaseCreateableEntity)).GetName(),
-            //    Assembly.GetAssembly(typeof(ProductMapping)).GetName()
-            //};
-
-            // TODO: Make a set for Mapping classes; expose publicly
-            //Entry assembly can be used for console applications
-            //Func<Type, bool> isTypeConfiguration =
-            //    type =>
-            //    {
-            //        var baseType = type.BaseType;
-            //        return baseType != null && baseType.IsGenericType && baseType.GetGenericTypeDefinition()
-            //                    .IsAssignableFrom(
-            //                        typeof (EntityTypeConfiguration<>));
-            //    };
+            var assemblyNames = new HashSet<AssemblyName>(equalityComparer);
+            
             IsEntityType = IsEntityType ?? (type => type.Namespace != null && type.Namespace.EndsWith(".Entities"));
 
             IList<Assembly> assys =
                 GetAppDomainAssemblies()
                     .Where(assembly => !assemblyIsMicrosoft(assembly))
-                    .Where(a => assemblyHasEntitiesOrMappings(a))
-                    //a.GetTypes().Any(type => IsEntityType(type)) //.FullName.Contains(".Entities")
-                    //|| a.GetTypes().Any(type => isMappingType(type)))
+                    .Where(assemblyContainsEntitiesOrMappings)
                     .ToList();
             foreach (var assembly in assys)
             {
@@ -154,7 +140,6 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
             }
             //For each assembly we find the classes in it of type EntityBase and 
             //register them with the modelBuilder
-            // todo: make mapping classes pre-empt inferences from the entity classes themselves:
             foreach (var name in assemblyNames)
             {
                 registerEntityTypesFromAssembly(name, modelBuilder, entityMethod);
@@ -198,15 +183,14 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
         /// </summary>
         /// <param name="assembly"></param>
         /// <returns></returns>
-        private static bool assemblyHasEntitiesOrMappings(Assembly assembly)
+        private static bool assemblyContainsEntitiesOrMappings(Assembly assembly)
         {
             try
             {
                 var types = getTypes(assembly).ToArray();
                 return types.Any(type =>
                     _isEntityType(type))
-                       || types.Any(type =>
-                           isMappingType(type));
+                       || types.Any(isMappingType);
             }
             catch (Exception)
             {
@@ -254,7 +238,6 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
             try
             {
                 var configurations = buildConfigurations(a);
-                var configuredTypes = new HashSet<Type>();
                 var configEntityTypes = configurations.Keys.Select(
                     k => k.GetGenericArguments()
                         .First()
@@ -273,13 +256,10 @@ namespace Funcular.DataProviders.EntityFramework.SqlServer
                         x => IsEntityType(x)
                              && !configEntityTypes.Contains(x.Name)
                              && !TypesToIgnore.Contains(x));
-                foreach (var entType in entityTypes)
+                foreach (var entType in entityTypes.Distinct())
                 {
-                    if (configuredTypes.Add(entType))
-                    {
-                        entityMethod.MakeGenericMethod(entType)
-                            .Invoke(modelBuilder, new object[] {});
-                    }
+                    entityMethod.MakeGenericMethod(entType)
+                        .Invoke(modelBuilder, new object[] {});
                 }
             }
             catch (Exception e)
