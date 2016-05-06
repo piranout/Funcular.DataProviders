@@ -106,6 +106,7 @@
     <None Include="NuGet\Funcular.DataProviders.0.6.1.0.nupkg" />
     <None Include="NuGet\Funcular.DataProviders.0.8.5.0.nupkg" />
     <None Include="NuGet\Funcular.DataProviders.0.9.5.0.nupkg" />
+    <None Include="NuGet\Funcular.DataProviders.0.9.6.0.nupkg" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

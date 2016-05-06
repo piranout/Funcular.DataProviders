@@ -76,7 +76,7 @@ namespace Funcular.DataProviders.EntityFramework
         public Action<string> Log { get {return _log;} set { _log = value; } }
 
         /// <summary>
-        ///     Get an entity by its Id
+        ///     Gets an entity by its Id.
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TKey"></typeparam>
@@ -157,10 +157,7 @@ namespace Funcular.DataProviders.EntityFramework
         {
             using(var context = GetNewContext(_connectionString))
             {
-                foreach (var entity in entities)
-                {
-                    context.Set<TEntity>().Add(entity);
-                }
+                context.Set<TEntity>().AddRange(entities);
                 if (safe)
                     context.SaveChanges();
                 else
@@ -182,15 +179,14 @@ namespace Funcular.DataProviders.EntityFramework
         /// <returns></returns>
         public override TEntity Insert<TEntity, TId>(TEntity entity, bool safe = true)
         {
-            var createable = entity as ICreateable<TId>;
+            /*var createable = entity as ICreateable<TId>;
             if(createable != null)
-                SetCreateableProperties<TId>(createable);
+                SetCreateableProperties<TId>(createable);*/
             using (var context = GetContext())
             {
-                context.Configuration.AutoDetectChangesEnabled = true;
+                //context.Configuration.AutoDetectChangesEnabled = true;
                 context.Set<TEntity>().Add(entity);
                 SetCreatableModifyableProperties<TId>(context);
-                //context.Entry(entity).State = EntityState.Added;////    context.Set<TEntity>().Add(entity);
                 if (safe)
                     context.SaveChanges();
                 else
@@ -212,21 +208,19 @@ namespace Funcular.DataProviders.EntityFramework
         /// <returns></returns>
         public override IEnumerable<TEntity> Update<TEntity, TId>(ICollection<TEntity> entities, bool safe = true)
         {
-            var entityArray = SetModifyableProperties<TEntity, TId>(entities).ToArray();
             using (var context = GetContext())
             {
-                foreach (var entity in entityArray)
+                foreach (var entity in entities)
                 {
-                    context.AttachAndModify(entity);
-                    var dbEntityEntry = this.Context.Entry(entity);
-                    dbEntityEntry.State = EntityState.Modified;
+                    context.Entry(entity).State = EntityState.Modified;
                 }
+                SetCreatableModifyableProperties<TId>(context);
                 if (safe)
                     context.SaveChanges();
                 else
                     context.SaveChangesAsync();
             }
-            return entityArray;
+            return entities;
         }
 
         /// <summary>
@@ -242,14 +236,10 @@ namespace Funcular.DataProviders.EntityFramework
         /// <returns></returns>
         public override TEntity Update<TEntity, TId>(TEntity entity, bool safe = true)
         {
-            SetModifyableProperties<TId>(entity as IModifyable<TId>);
             using (var context = GetContext())
             {
-                
                 context.Entry(entity).State = EntityState.Modified;
-                /*var dbEntityEntry = this.Context.Entry(entity);
-                    dbEntityEntry.State = EntityState.Modified;*/
-                
+                SetCreatableModifyableProperties<TId>(context);
                 if (safe)
                     context.SaveChanges();
                 else
@@ -272,7 +262,6 @@ namespace Funcular.DataProviders.EntityFramework
             {
                 context.Set<TEntity>().AddRange(entities);
                 SetCreatableModifyableProperties<TId>(context);
-                // SetCreatableProperties<TEntity, TId>(entities).ToArray();
             }
             using (var context = GetContext())
             {
@@ -307,7 +296,7 @@ namespace Funcular.DataProviders.EntityFramework
         }
 
         /// <summary>
-        ///     Delete an entity.
+        ///     Delete an entity for which you have the instance.
         /// </summary>
         /// <param name="entity"></param>
         public override void Delete<TEntity, TId>(TEntity entity)
